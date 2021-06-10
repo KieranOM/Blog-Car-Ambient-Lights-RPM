@@ -1,5 +1,6 @@
 package uk.co.kieranmason.ambientrpm;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
@@ -17,12 +18,13 @@ public class MainActivity extends AppCompatActivity {
 
     private final static int REQUEST_ENABLE_BT = 1;
     private final Random random = new Random();
-    private final String lightAddress = "BE:FF:E4:00:A9:83";
+    private final String lightAddress = "BE:FF:E4:00:A9:83", obdAddress = "00:1D:A5:68:98:8B";
 
     private BluetoothAdapter bluetoothAdapter;
     private LightConnection lightConnection;
+    private OBD2Connection obdConnection;
 
-    private TextView lightStatusLabel;
+    private TextView lightStatusLabel, obdStatusLabel, rpmLabel;
     private Button lightRandomiseButton;
 
     @Override
@@ -37,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
         // Create the light connection.
         lightConnection = new LightConnection(this, lightAddress, this::onLightStateChanged);
 
+        // Create the OBD2 connection.
+        obdConnection = new OBD2Connection(this, obdAddress, this::onOBDStateChanged, this::onRPMReceived);
+
         // Ensure that bluetooth is enabled.
         if (!isBluetoothEnabled()) {
             requestBluetoothEnable();
@@ -44,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
 
         lightStatusLabel = findViewById(R.id.lightsStateLabel);
         lightRandomiseButton = findViewById(R.id.lightsRandomiseButton);
+        obdStatusLabel = findViewById(R.id.obdStateLabel);
+        rpmLabel = findViewById(R.id.rpmLabel);
     }
 
     private void onLightStateChanged(LightConnection connection) {
@@ -59,6 +66,27 @@ public class MainActivity extends AppCompatActivity {
                 setTextViewString(lightStatusLabel, R.string.connected);
                 break;
         }
+    }
+
+    private void onOBDStateChanged(OBD2Connection connection) {
+        final ConnectionState state = connection.getState();
+        switch (state) {
+            case DISCONNECTED:
+                setTextViewString(obdStatusLabel, R.string.disconnected);
+                break;
+            case CONNECTING:
+                setTextViewString(obdStatusLabel, R.string.connecting);
+                break;
+            case CONNECTED:
+                setTextViewString(obdStatusLabel, R.string.connected);
+                break;
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void onRPMReceived(OBD2Connection connection) {
+        final int rpm = connection.getRPM();
+        runOnUiThread(() -> rpmLabel.setText("RPM: " + rpm));
     }
 
     private boolean isBluetoothEnabled() {
@@ -101,5 +129,14 @@ public class MainActivity extends AppCompatActivity {
 
         // Visualise the colour on the randomise button.
         lightRandomiseButton.setBackgroundColor(colour);
+    }
+
+    public void onOBDConnectPressed(View view) {
+        if (!isBluetoothEnabled()) {
+            requestBluetoothEnable();
+            return;
+        }
+
+        obdConnection.connect();
     }
 }
