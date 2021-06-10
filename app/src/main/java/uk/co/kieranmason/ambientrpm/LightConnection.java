@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.graphics.Color;
 
 import androidx.core.util.Consumer;
 
@@ -98,9 +99,9 @@ public class LightConnection {
             return;
 
         // Unpack the colour into its bytes.
-        final byte red = (byte) ((colour >> 16) & 0xff),
-                green = (byte) ((colour >> 8) & 0xff),
-                blue = (byte) ((colour) & 0xff);
+        final byte red = (byte) Color.red(colour),
+                green = (byte) Color.green(colour),
+                blue = (byte) Color.blue(colour);
 
         // Update the payload buffer with the correct parameters.
         byte[] payload = getColourPayload(red, green, blue);
@@ -125,9 +126,8 @@ public class LightConnection {
             super.onConnectionStateChange(gatt, status, newState);
 
             if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED && gatt.discoverServices()) {
-                // Connected. Just need to get the services now.
+                // Connected and started scan successfully. Just wait for the services now.
                 connection.setState(ConnectionState.CONNECTING);
-                gatt.discoverServices();
             } else {
                 // Disconnected. Clear the connection values.
                 connection.setState(ConnectionState.DISCONNECTED);

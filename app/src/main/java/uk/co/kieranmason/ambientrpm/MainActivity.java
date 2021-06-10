@@ -166,9 +166,9 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         // Generate a random colour via its channels.
-        final int r = random.nextInt(255),
-                g = random.nextInt(255),
-                b = random.nextInt(255);
+        final int r = random.nextInt(256),
+                g = random.nextInt(256),
+                b = random.nextInt(256);
         final int colour = Color.rgb(r, g, b);
 
         // Send this via the connection to the light.
