@@ -27,6 +27,48 @@ public class MainActivity extends AppCompatActivity {
     private TextView lightStatusLabel, obdStatusLabel, rpmLabel;
     private Button lightRandomiseButton;
 
+    private static int calculateColourFromRPM(int rpm) {
+        // Map 1000, 1500 and 2000 RPM to green, yellow and red respectively.
+        // Keeping the revs low for testing - you're welcome neighbours!
+        final int colourA, colourB;
+        final float t;
+
+        if (rpm <= 1000)
+            return Color.GREEN;
+        else if (rpm <= 1500) {
+            // Lerp between GREEN and YELLOW.
+            colourA = Color.GREEN;
+            colourB = Color.YELLOW;
+            t = (rpm - 1000f) / 500f;
+        } else if (rpm <= 2000) {
+            // Lerp between YELLOW and RED.
+            colourA = Color.YELLOW;
+            colourB = Color.RED;
+            t = (rpm - 1500f) / 500f;
+        } else
+            return Color.RED;
+
+        return lerpColour(colourA, colourB, t);
+    }
+
+    public static int lerpColour(int colourA, int colourB, float t) {
+        final int red1 = Color.red(colourA), red2 = Color.red(colourB),
+                blue1 = Color.blue(colourA), blue2 = Color.blue(colourB),
+                green1 = Color.green(colourA), green2 = Color.green(colourB),
+                alpha1 = Color.alpha(colourA), alpha2 = Color.alpha(colourB);
+
+        final int red = lerp(red1, red2, t),
+                green = lerp(green1, green2, t),
+                blue = lerp(blue1, blue2, t),
+                alpha = lerp(alpha1, alpha2, t);
+
+        return Color.argb(alpha, red, green, blue);
+    }
+
+    private static int lerp(int a, int b, float t) {
+        return Math.round(a + t * (b - a));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,6 +128,11 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("SetTextI18n")
     private void onRPMReceived(OBD2Connection connection) {
         final int rpm = connection.getRPM();
+
+        // Calculate the mapped colour and send it to the light connection.
+        final int colour = calculateColourFromRPM(rpm);
+        lightConnection.setColour(colour);
+
         runOnUiThread(() -> rpmLabel.setText("RPM: " + rpm));
     }
 
